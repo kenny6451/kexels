@@ -1,0 +1,78 @@
+public function tokenlogin()
+	{
+		$this->willRenderLayoutView = false;
+        $this->willRenderActionView = false;
+		
+		$session = Registry::get("session");
+		$member = $this->member;
+        $isLogedIn = isset($member);
+		
+		if (RequestMethods::hasRequest())
+        {
+			$email = RequestMethods::post("email");
+            $password = RequestMethods::post("password");
+            $remember = RequestMethods::post("remember");
+			$responseData = array();
+			
+			$error = false;
+			
+			if (empty($password))
+            {
+                $response["error"]["profile"]["password"] = "Please enter your password";
+                $error = true;
+            }
+			
+			if (!$error)
+            {
+				$password = hash("sha256", $password);
+                
+                $member = Member::first(array(
+                        "email = ?" => $email,
+                        "password = ?" => $password,
+                ));
+				
+				if (!empty($member))
+                {
+					if ($member->isActive == FALSE)
+                    {
+                       $response["error"]["profile"]["password"] = "Your account is inactive";
+                        $error = true;                                           
+                    } else {
+						$this->member = $member;
+						$device = $this->isMobileDevice();
+						
+						if (!$member->isProfileded())
+                        {
+                            $session = Registry::get("session");
+                            $session->set("isLogin", true);
+
+                            self::redirect("/member/editprofile");
+                        }
+
+                        if (!empty($remember))
+                        {
+                            $this->_setRememberMe();
+                        }
+						
+						$response["status"] = "success";
+						
+						$response['data'] = $responseData;
+						$encoded = json_encode($response);
+						header('Content-type: application/json');
+						//exit($encoded);
+						
+						$this->_loginInToken($device,$encoded);
+					}
+				} else {
+					$response["error"]["profile"]["password"] = "Either your username or password is wrong";
+					$error = true;
+				}
+			}
+			
+			$response["status"] = !$error ? "success" : "fail";
+		}
+		$response['data'] = $responseData;
+        $encoded = json_encode($response);
+        header('Content-type: application/json');
+        exit($encoded);
+	}

@@ -1,0 +1,37 @@
+$('#loginForm').on('submit',function(event) {
+	/* stop form from submitting normally */
+    event.preventDefault();
+	
+	var form = $( this ),
+		url = "/member/tokenlogin";
+	
+	var formData = new FormData($(this)[0]);
+	
+	setTimeout(function() {
+		setTimeout(function() {
+			$.ajax({
+				url: url,
+				type: "POST",
+				data: formData,
+				async: false,
+				success: function (data) {
+					if(data.status === "success"){
+						$('#popupform').modal("hide");
+						window.location.href = redirectUrl;
+						redirectUrl ="";
+					} else {
+						//do some error checking
+						if(data.error.profile) {
+							for(name in data.error.profile) {
+								$("input[name='" +name+ "']").siblings(".error-message").text(data.error.profile[name]).closest(".form-group").addClass('has-error');	 
+							}
+						}
+					}
+				},
+				cache: false,
+				contentType: false,
+				processData: false
+			});
+		}, 100);
+	}, 100);
+});
